@@ -25,7 +25,7 @@ const EMAILJS_PUBLIC_KEY = '89o2CY1j9FoIsTU5V';
    на него не действуют. Инструкция — README.md, раздел 8.
    Код скрипта лежит в файле google-relay.gs
    ============================================================ */
-const RELAY_URL = 'https://script.google.com/macros/library/d/1leQWz0d0uS_ZmWOxOHCGJX8iNOYf2BykJdyABtn8wXzi_scqFRs7wh6_/1';   // адрес вида https://script.google.com/macros/s/…/exec
+const RELAY_URL = 'https://script.google.com/macros/s/AKfycbziLsK7oclubJSdIw6iruT_22za7l4jT3PO8PdFc3iGo54ShWF_3_e548djdTgDqNAWKw/exec';   // адрес вида https://script.google.com/macros/s/…/exec
 const RELAY_TOKEN = 'granium00'; // слово-пароль, одинаково в скрипте и здесь
 
 /* Канал отправки:
