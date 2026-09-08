@@ -4,12 +4,26 @@
    ============================================================ */
 
 /* Токен бота из @BotFather, вид: "123456789:AAE..." */
-const TELEGRAM_BOT_TOKEN = '8318849467:AAHo-9ad5VLudGGzS0WH7Cjp570z5CtVMCA';
+const TELEGRAM_BOT_TOKEN = '';
 
 /* Куда бот должен слать файлы:
    - личный чат: число, вид "123456789"
    - группа/канал: "@имя_канала" (бот должен быть в ней) */
 const TELEGRAM_CHAT_ID = '1974237701';
+
+/* ============================================================
+   ОТПРАВКА НА ПОЧТУ (EmailJS) — запасной канал, если сеть
+   режет Telegram. Инструкция по получению ключей — README.md
+   ============================================================ */
+const EMAILJS_SERVICE_ID = 'service_ul0wi5p';
+const EMAILJS_TEMPLATE_ID = 'template_21ti07q';
+const EMAILJS_PUBLIC_KEY = '89o2CY1j9FoIsTU5V';
+
+/* Канал отправки:
+   'email'    — только почта
+   'telegram' — только Telegram
+   'both'     — оба параллельно (что доступно, то и доставит) */
+const SEND_MODE = 'email';
 
 /* Префикс компании GS1 для SSCC */
 const SSCC_PREFIX = '4643721954';

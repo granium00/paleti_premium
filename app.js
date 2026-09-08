@@ -219,6 +219,47 @@ async function sendToTelegram(blob, fileName, caption) {
   }
 }
 
+/* ---------- Отправка на почту (EmailJS) ---------- */
+function loadEmailJS() {
+  return new Promise((resolve, reject) => {
+    if (typeof emailjs !== 'undefined') { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('Не удалось загрузить библиотеку EmailJS'));
+    document.head.appendChild(s);
+  });
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      const comma = result.indexOf(',');
+      resolve(comma === -1 ? result : result.slice(comma + 1));
+    };
+    reader.onerror = () => reject(new Error('Не удалось прочитать файл для почты'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function sendByEmail(blob, fileName, caption) {
+  await loadEmailJS();
+  if (EMAILJS_PUBLIC_KEY) emailjs.init(EMAILJS_PUBLIC_KEY);
+  const content = await blobToBase64(blob);
+  const resp = await emailjs.send(
+    EMAILJS_SERVICE_ID,
+    EMAILJS_TEMPLATE_ID,
+    {
+      caption: caption,
+      message: `Палет «${caption}», кодов: ${rows.length}`,
+      attachments: [{ name: fileName, content: content, encoding: 'base64' }],
+    }
+  );
+  if (resp.status !== 200) throw new Error('EmailJS: HTTP ' + resp.status);
+}
+
 /* ---------- Диагностика: что именно не работает ---------- */
 async function runDiagnostics() {
   const parts = [];
@@ -278,23 +319,10 @@ function timestamp() {
 }
 
 /* ---------- Экран результата ---------- */
-function showDoneScreen(mode, name, errorText) {
-  const icon = $('done-icon');
-  const title = $('done-title');
-  const sub = $('done-sub');
-  if (mode === 'success') {
-    icon.textContent = '✅';
-    title.textContent = `Палет «${name}» отправлен`;
-    sub.textContent = `Файл ${lastFile.fileName} пришёл в Telegram.`;
-  } else if (mode === 'local') {
-    icon.textContent = '💾';
-    title.textContent = 'Файл сохранён';
-    sub.textContent = `Файл «${lastFile.fileName}» скачан на устройство.\nЗаполните config.js, чтобы файлы отправлялись в Telegram сами.`;
-  } else {
-    icon.textContent = '⚠️';
-    title.textContent = 'Не удалось отправить в Telegram';
-    sub.textContent = `${errorText}\nФайл скачан на устройство: «${lastFile.fileName}».`;
-  }
+function showDoneScreen(mode, title, sub) {
+  $('done-icon').textContent = mode === 'success' ? '✅' : (mode === 'local' ? '💾' : '⚠️');
+  $('done-title').textContent = title;
+  $('done-sub').textContent = sub;
   showScreen('done');
 }
 
@@ -311,24 +339,64 @@ async function sendPallet() {
     const blob = buildExcelFile();
     lastFile = { blob, fileName };
 
-    if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-      await sendToTelegram(blob, fileName, baseName);
-      clearDraft();
-      modal.classList.add('hidden');
-      showDoneScreen('success', baseName);
-    } else {
-      // Telegram не настроен — просто скачиваем файл
+    const mode = (typeof SEND_MODE === 'string') ? SEND_MODE : 'email';
+    const emailReady = !!(EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY);
+    const tgReady = !!(TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID);
+    const wantEmail = emailReady && (mode === 'email' || mode === 'both');
+    const wantTg = tgReady && (mode === 'telegram' || mode === 'both');
+
+    if (!wantEmail && !wantTg) {
+      // Каналы не настроены — просто скачиваем файл
       downloadBlob(blob, fileName);
       modal.classList.add('hidden');
-      showDoneScreen('local', baseName);
+      showDoneScreen('local', 'Файл сохранён',
+        `Файл «${fileName}» скачан на устройство.\nЗаполните config.js — и файлы будут отправляться сами.`);
+      return;
     }
-  } catch (err) {
-    console.error(err);
-    // Telegram не сработал — отдаём файл на устройство и показываем диагноз
+
+    // Каналы работают параллельно: медленный Telegram не задерживает почту
+    const tasks = [];
+    if (wantEmail) tasks.push(sendByEmail(blob, fileName, baseName));
+    if (wantTg) tasks.push(sendToTelegram(blob, fileName, baseName));
+    const results = await Promise.allSettled(tasks);
+
+    const reason = (r) =>
+      (r.reason && (r.reason.message || r.reason.text)) || String(r.reason || '');
+    let i = 0;
+    const delivered = [], problems = [];
+    if (wantEmail) {
+      const r = results[i++];
+      (r.status === 'fulfilled' ? delivered : problems).push('📧 почта' + (r.status === 'rejected' ? ': ' + reason(r) : ''));
+    }
+    if (wantTg) {
+      const r = results[i++];
+      (r.status === 'fulfilled' ? delivered : problems).push('✈️ Telegram' + (r.status === 'rejected' ? ': ' + reason(r) : ''));
+    }
+
+    if (delivered.length) {
+      clearDraft();
+      modal.classList.add('hidden');
+      const problemsTxt = problems.length ? '\nНе сработало: ' + problems.join('; ') : '';
+      showDoneScreen('success', `Палет «${baseName}» отправлен`,
+        `Файл ${fileName}\nДоставлено: ${delivered.join(' + ')}.${problemsTxt}`);
+      return;
+    }
+
+    // Всё упало — отдаём файл на устройство и показываем диагноз
     const diag = await runDiagnostics();
     downloadBlob(lastFile.blob, lastFile.fileName);
     modal.classList.add('hidden');
-    showDoneScreen('error', baseName, err.message + '\n\n' + diag.join('\n'));
+    showDoneScreen('error', 'Не удалось отправить',
+      problems.join('\n') + '\n\n' + diag.join('\n') +
+      `\n\nФайл скачан на устройство: «${fileName}».`);
+  } catch (err) {
+    console.error(err);
+    // Ошибка ещё на этапе формирования файла
+    const diag = await runDiagnostics();
+    if (lastFile) downloadBlob(lastFile.blob, lastFile.fileName);
+    modal.classList.add('hidden');
+    showDoneScreen('error', 'Ошибка',
+      err.message + '\n\n' + diag.join('\n'));
   } finally {
     btnSend.disabled = false;
     btnSend.textContent = 'Отправить';

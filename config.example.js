@@ -11,5 +11,19 @@ const TELEGRAM_BOT_TOKEN = '';
    - группа/канал: "@имя_канала" (бот должен быть в ней) */
 const TELEGRAM_CHAT_ID = '';
 
+/* ============================================================
+   ОТПРАВКА НА ПОЧТУ (EmailJS) — запасной канал, если сеть
+   режет Telegram. Инструкция по получению ключей — README.md
+   ============================================================ */
+const EMAILJS_SERVICE_ID = '';
+const EMAILJS_TEMPLATE_ID = '';
+const EMAILJS_PUBLIC_KEY = '';
+
+/* Канал отправки:
+   'email'    — только почта
+   'telegram' — только Telegram
+   'both'     — оба параллельно (что доступно, то и доставит) */
+const SEND_MODE = 'email';
+
 /* Префикс компании GS1 для SSCC */
 const SSCC_PREFIX = '4643721954';

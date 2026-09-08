@@ -8,7 +8,7 @@
  *  иначе ТСД может показывать старую версию.
  * ===================================================== */
 
-const CACHE_NAME = 'palety-v3';
+const CACHE_NAME = 'palety-v4';
 
 const LOCAL_ASSETS = [
   './',
@@ -24,6 +24,7 @@ const LOCAL_ASSETS = [
 
 const CDN_ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  'https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js',
 ];
 
 self.addEventListener('install', (e) => {
