@@ -204,13 +204,55 @@ async function sendToTelegram(blob, fileName, caption) {
   form.append('chat_id', TELEGRAM_CHAT_ID);
   form.append('document', blob, fileName);
   form.append('caption', caption);
-  const resp = await fetch(
-    'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN + '/sendDocument',
-    { method: 'POST', body: form }
-  );
-  if (!resp.ok) throw new Error('Сеть: HTTP ' + resp.status);
-  const json = await resp.json();
-  if (!json.ok) throw new Error(json.description || 'Ошибка Telegram');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 25000); // не висеть вечно
+  try {
+    const resp = await fetch(
+      'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN + '/sendDocument',
+      { method: 'POST', body: form, signal: controller.signal }
+    );
+    if (!resp.ok) throw new Error('Сеть: HTTP ' + resp.status);
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.description || 'Ошибка Telegram');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* ---------- Диагностика: что именно не работает ---------- */
+async function runDiagnostics() {
+  const parts = [];
+  parts.push(navigator.onLine
+    ? '📶 Интернет на устройстве: есть'
+    : '📵 Интернет на устройстве: НЕТ — проверьте Wi-Fi');
+
+  const d = new Date();
+  if (d.getFullYear() < 2020) {
+    parts.push('🕐 ВНИМАНИЕ: дата на устройстве (' + d.toLocaleDateString() +
+               ') сбита — из-за этого ломается защищённое соединение. Поставьте правильную дату/время!');
+  }
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    const resp = await fetch(
+      'https://api.telegram.org/bot' + TELEGRAM_BOT_TOKEN + '/getMe',
+      { signal: controller.signal, cache: 'no-store' }
+    );
+    clearTimeout(timer);
+    if (!resp.ok) {
+      parts.push('✈️ Telegram API: ответил HTTP ' + resp.status);
+      return parts;
+    }
+    const json = await resp.json();
+    parts.push(json.ok
+      ? '✈️ Telegram API: доступен, бот «' + json.result.username + '» отвечает'
+      : '✈️ Telegram API: отвечает, но бот вернул ошибку — ' + (json.description || 'неизвестно'));
+  } catch (err) {
+    parts.push('🚫 Telegram API: НЕДОСТУПЕН с устройства — ' + err.message +
+               ' (сеть режет адрес api.telegram.org?)');
+  }
+  return parts;
 }
 
 /* ---------- Скачивание файла (запасной путь) ---------- */
@@ -282,10 +324,11 @@ async function sendPallet() {
     }
   } catch (err) {
     console.error(err);
-    // Telegram не сработал — отдаём файл на устройство
+    // Telegram не сработал — отдаём файл на устройство и показываем диагноз
+    const diag = await runDiagnostics();
     downloadBlob(lastFile.blob, lastFile.fileName);
     modal.classList.add('hidden');
-    showDoneScreen('error', baseName, err.message);
+    showDoneScreen('error', baseName, err.message + '\n\n' + diag.join('\n'));
   } finally {
     btnSend.disabled = false;
     btnSend.textContent = 'Отправить';
