@@ -8,7 +8,7 @@
  *  иначе ТСД может показывать старую версию.
  * ===================================================== */
 
-const CACHE_NAME = 'palety-v1';
+const CACHE_NAME = 'palety-v2';
 
 const LOCAL_ASSETS = [
   './',
@@ -18,6 +18,8 @@ const LOCAL_ASSETS = [
   './config.js',
   './manifest.json',
   './icon.svg',
+  './icon-192.png',
+  './icon-512.png',
 ];
 
 const CDN_ASSETS = [
