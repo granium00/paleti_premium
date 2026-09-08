@@ -5,6 +5,10 @@
  *  Настройки (Telegram, SSCC) лежат в config.js
  * ===================================================== */
 
+/* Версия приложения — показывается на экране ошибки,
+   чтобы всегда было видно, свежая ли версия на устройстве */
+const APP_VERSION = '5.2';
+
 /* ---------- Состояние ---------- */
 let rows = [];            // [{ code: string }]
 let selectedIndex = -1;   // выбранная строка (для удаления)
@@ -274,9 +278,35 @@ async function sendByEmail(blob, fileName, caption) {
   if (resp.status !== 200) throw new Error('EmailJS: HTTP ' + resp.status);
 }
 
+/* ---------- Отправка через Google-реле (Apps Script) ----------
+   Письмо отправляет сервер Google — блокировки провайдера
+   на этот канал не действуют */
+async function sendViaRelay(blob, fileName, caption) {
+  const content = await blobToBase64(blob);
+  const resp = await withTimeout(
+    fetch(RELAY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        token: RELAY_TOKEN,
+        fileName: fileName,
+        caption: caption,
+        count: rows.length,
+        data: content,
+      }),
+    }),
+    45000,
+    'Google-реле не ответило за 45 секунд'
+  );
+  if (!resp.ok) throw new Error('Google-реле: HTTP ' + resp.status);
+  const json = await resp.json();
+  if (!json.ok) throw new Error('Google-реле: ' + (json.error || 'неизвестная ошибка'));
+}
+
 /* ---------- Диагностика: что именно не работает ---------- */
 async function runDiagnostics() {
   const parts = [];
+  parts.push('Версия приложения: ' + APP_VERSION);
   parts.push(navigator.onLine
     ? '📶 Интернет на устройстве: есть'
     : '📵 Интернет на устройстве: НЕТ — проверьте Wi-Fi');
@@ -292,11 +322,11 @@ async function runDiagnostics() {
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 8000);
-      await fetch('https://api.emailjs.com', { mode: 'no-cors', cache: 'no-store', signal: controller.signal });
+      const resp = await fetch('https://api.emailjs.com/', { cache: 'no-store', signal: controller.signal });
       clearTimeout(timer);
-      parts.push('📧 api.emailjs.com: доступен');
+      parts.push('📧 api.emailjs.com: доступен (ответил HTTP ' + resp.status + ')');
     } catch (err) {
-      parts.push('🚫 api.emailjs.com: НЕДОСТУПЕН с устройства — ' + err.message);
+      parts.push('🚫 api.emailjs.com: НЕДОСТУПЕН — ' + err.message);
     }
   }
 
@@ -371,13 +401,15 @@ async function sendPallet() {
     const blob = buildExcelFile();
     lastFile = { blob, fileName };
 
-    const mode = (typeof SEND_MODE === 'string') ? SEND_MODE : 'email';
+    const mode = (typeof SEND_MODE === 'string') ? SEND_MODE : 'both';
     const emailReady = !!(EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY);
     const tgReady = !!(TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID);
+    const relayReady = !!(RELAY_URL && RELAY_TOKEN);
     const wantEmail = emailReady && (mode === 'email' || mode === 'both');
     const wantTg = tgReady && (mode === 'telegram' || mode === 'both');
+    const wantRelay = relayReady && (mode === 'google' || mode === 'both');
 
-    if (!wantEmail && !wantTg) {
+    if (!wantEmail && !wantTg && !wantRelay) {
       // Каналы не настроены — просто скачиваем файл
       downloadBlob(blob, fileName);
       modal.classList.add('hidden');
@@ -386,8 +418,9 @@ async function sendPallet() {
       return;
     }
 
-    // Каналы работают параллельно: медленный Telegram не задерживает почту
+    // Каналы работают параллельно: медленные не задерживают быстрые
     const tasks = [];
+    if (wantRelay) tasks.push(sendViaRelay(blob, fileName, baseName));
     if (wantEmail) tasks.push(sendByEmail(blob, fileName, baseName));
     if (wantTg) tasks.push(sendToTelegram(blob, fileName, baseName));
     const results = await withTimeout(
@@ -400,9 +433,13 @@ async function sendPallet() {
       (r.reason && (r.reason.message || r.reason.text)) || String(r.reason || '');
     let i = 0;
     const delivered = [], problems = [];
+    if (wantRelay) {
+      const r = results[i++];
+      (r.status === 'fulfilled' ? delivered : problems).push('📧 Google-почта' + (r.status === 'rejected' ? ': ' + reason(r) : ''));
+    }
     if (wantEmail) {
       const r = results[i++];
-      (r.status === 'fulfilled' ? delivered : problems).push('📧 почта' + (r.status === 'rejected' ? ': ' + reason(r) : ''));
+      (r.status === 'fulfilled' ? delivered : problems).push('📧 почта (EmailJS)' + (r.status === 'rejected' ? ': ' + reason(r) : ''));
     }
     if (wantTg) {
       const r = results[i++];

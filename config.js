@@ -19,11 +19,21 @@ const EMAILJS_SERVICE_ID = 'service_ul0wi5p';
 const EMAILJS_TEMPLATE_ID = 'template_21ti07q';
 const EMAILJS_PUBLIC_KEY = '89o2CY1j9FoIsTU5V';
 
+/* ============================================================
+   РЕЛЕ ЧЕРЕЗ GOOGLE (Apps Script) — самый надёжный канал:
+   письмо отправляет сервер Google, блокировки провайдера
+   на него не действуют. Инструкция — README.md, раздел 8.
+   Код скрипта лежит в файле google-relay.gs
+   ============================================================ */
+const RELAY_URL = 'https://script.google.com/macros/library/d/1leQWz0d0uS_ZmWOxOHCGJX8iNOYf2BykJdyABtn8wXzi_scqFRs7wh6_/1';   // адрес вида https://script.google.com/macros/s/…/exec
+const RELAY_TOKEN = 'granium00'; // слово-пароль, одинаково в скрипте и здесь
+
 /* Канал отправки:
-   'email'    — только почта
+   'google'   — только Google-реле (рекомендуется)
+   'email'    — только EmailJS
    'telegram' — только Telegram
-   'both'     — оба параллельно (что доступно, то и доставит) */
-const SEND_MODE = 'email';
+   'both'     — все настроенные параллельно (что доступно, то и доставит) */
+const SEND_MODE = 'both';
 
 /* Префикс компании GS1 для SSCC */
 const SSCC_PREFIX = '4643721954';
