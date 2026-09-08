@@ -78,6 +78,12 @@ button { font-family: inherit; }
 
 .btn-big:active { transform: scale(.96); }
 
+.app-version {
+  margin-top: 24px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
 /* ---------- Экран 2: сбор кодов ---------- */
 
 .topbar {

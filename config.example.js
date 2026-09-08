@@ -33,7 +33,7 @@ const RELAY_TOKEN = ''; // слово-пароль, одинаково в скр
    'email'    — только EmailJS
    'telegram' — только Telegram
    'both'     — все настроенные параллельно (что доступно, то и доставит) */
-const SEND_MODE = 'both';
+const SEND_MODE = 'google';
 
 /* Префикс компании GS1 для SSCC */
 const SSCC_PREFIX = '4643721954';

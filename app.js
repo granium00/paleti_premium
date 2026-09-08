@@ -7,7 +7,7 @@
 
 /* Версия приложения — показывается на экране ошибки,
    чтобы всегда было видно, свежая ли версия на устройстве */
-const APP_VERSION = '5.2';
+const APP_VERSION = '5.3';
 
 /* ---------- Состояние ---------- */
 let rows = [];            // [{ code: string }]
@@ -533,6 +533,7 @@ function registerSW() {
 }
 
 /* ---------- Старт ---------- */
+$('app-version').textContent = 'v' + APP_VERSION;
 loadDraft();
 renderRows();
 showScreen('home');
