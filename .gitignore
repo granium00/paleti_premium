@@ -1,0 +1,3 @@
+# config.js содержит токен бота — не хранится в git.
+# Шаблон лежит в config.example.js
+config.js

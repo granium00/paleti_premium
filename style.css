@@ -1,0 +1,352 @@
+/* ============================================
+   Сбор палетов — стили
+   Мобильный-первый дизайн под экран ТСД:
+   крупные кнопки, высокий контраст
+   ============================================ */
+
+:root {
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --accent: #2563eb;
+  --accent-soft: #eff6ff;
+  --danger: #dc2626;
+  --danger-soft: #fef2f2;
+  --border: #e2e8f0;
+  --radius: 16px;
+  --shadow: 0 8px 24px rgba(15, 23, 42, .08);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  user-select: none;
+}
+
+.screen {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.hidden { display: none !important; }
+
+button { font-family: inherit; }
+
+/* ---------- Экран 1: главная ---------- */
+
+#screen-home {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  background: linear-gradient(180deg, #eff6ff 0%, var(--bg) 70%);
+}
+
+.hero { max-width: 440px; }
+
+.hero-logo { font-size: 72px; margin-bottom: 8px; }
+
+.hero h1 { font-size: 34px; margin: 0 0 8px; }
+
+.hero p {
+  color: var(--muted);
+  margin: 0 0 36px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.btn-big {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  border: none;
+  border-radius: 20px;
+  padding: 20px 48px;
+  cursor: pointer;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, .35);
+  transition: transform .1s ease;
+}
+
+.btn-big:active { transform: scale(.96); }
+
+/* ---------- Экран 2: сбор кодов ---------- */
+
+.topbar {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: center;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.count-badge {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 6px 18px;
+}
+
+.scan-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 12px;
+  flex-shrink: 0;
+}
+
+#code-input {
+  flex: 1;
+  min-height: 58px;
+  font-size: 18px;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 0 16px;
+  outline: none;
+  background: var(--card);
+  color: var(--text);
+}
+
+#code-input:focus { border-color: var(--accent); }
+
+.btn-add {
+  width: 58px;
+  border: none;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.btn-add:active { background: #1d4ed8; }
+
+.rows {
+  flex: 1;
+  overflow-y: auto;
+  border-radius: var(--radius);
+  min-height: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.row.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.row-num {
+  flex-shrink: 0;
+  min-width: 42px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.row.selected .row-num { background: var(--accent); color: #fff; }
+
+.row-code {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 16px;
+  word-break: break-all;
+  user-select: text;
+}
+
+.bottombar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+}
+
+.btn-delete {
+  min-height: 58px;
+  padding: 0 24px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--danger);
+  background: var(--danger-soft);
+  border: 2px solid #fecaca;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.btn-delete:disabled { opacity: .4; cursor: default; }
+
+.btn-primary {
+  flex: 1;
+  min-height: 58px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.btn-primary:disabled {
+  background: var(--border);
+  color: var(--muted);
+  cursor: default;
+}
+
+/* ---------- Модалка ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, .45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 50;
+}
+
+.modal {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 24px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow);
+}
+
+.modal h2 { margin: 0 0 6px; font-size: 22px; }
+
+.modal-count { color: var(--muted); font-size: 15px; margin: 0 0 16px; }
+
+#pallet-name {
+  width: 100%;
+  min-height: 54px;
+  font-size: 17px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 0 14px;
+  margin-bottom: 16px;
+  outline: none;
+  background: var(--card);
+  color: var(--text);
+}
+
+#pallet-name:focus { border-color: var(--accent); }
+
+.modal-actions { display: flex; gap: 10px; }
+
+.btn-cancel {
+  min-height: 54px;
+  padding: 0 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.btn-send {
+  flex: 1;
+  min-height: 54px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.btn-send:disabled { opacity: .6; }
+
+/* ---------- Уведомление (тост) ---------- */
+
+.toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translate(-50%, -12px);
+  background: #0f172a;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity .25s ease, transform .25s ease;
+  z-index: 100;
+  max-width: 90vw;
+  text-align: center;
+  pointer-events: none;
+}
+
+.toast.toast-error { background: var(--danger); }
+
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+.toast.hide { opacity: 0; transform: translate(-50%, -12px); }
+
+/* ---------- Экран 3: результат ---------- */
+
+#screen-done {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.done { max-width: 440px; }
+
+.done-icon { font-size: 64px; margin-bottom: 8px; }
+
+.done-title { font-size: 24px; font-weight: 700; margin: 0 0 10px; }
+
+.done-sub {
+  color: var(--muted);
+  margin: 0 0 32px;
+  font-size: 16px;
+  line-height: 1.5;
+  white-space: pre-line;
+}

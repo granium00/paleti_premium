@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#2563eb">
+  <title>Сбор палетов</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ЭКРАН 1: главная -->
+  <main id="screen-home" class="screen">
+    <div class="hero">
+      <div class="hero-logo">📦</div>
+      <h1>Сбор палетов</h1>
+      <p>Сканируйте коды на ТСД, формируйте Excel-файл с SSCC и отправляйте его в Telegram</p>
+      <button id="btn-new-pallet" class="btn-big">Создать палет</button>
+    </div>
+  </main>
+
+  <!-- ЭКРАН 2: сбор кодов -->
+  <main id="screen-collect" class="screen hidden">
+    <header class="topbar">
+      <span id="counter" class="count-badge">0 кодов</span>
+    </header>
+
+    <div class="scan-area">
+      <div class="input-row">
+        <input id="code-input" type="text" placeholder="Сканируйте код…"
+               autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
+               enterkeyhint="send">
+        <button id="btn-add" class="btn-add" title="Добавить">+</button>
+      </div>
+      <div id="rows" class="rows"></div>
+    </div>
+
+    <footer class="bottombar">
+      <button id="btn-delete" class="btn-delete" disabled>Удалить</button>
+      <button id="btn-finish" class="btn-primary" disabled>Создать палет</button>
+    </footer>
+  </main>
+
+  <!-- ЭКРАН 3: результат -->
+  <main id="screen-done" class="screen hidden">
+    <div class="done">
+      <div id="done-icon" class="done-icon">✅</div>
+      <h1 id="done-title" class="done-title"></h1>
+      <p id="done-sub" class="done-sub"></p>
+      <button id="btn-again" class="btn-big">Создать новый палет</button>
+    </div>
+  </main>
+
+  <!-- МОДАЛКА: название палета -->
+  <div id="modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h2>Палет готов</h2>
+      <p id="modal-count" class="modal-count"></p>
+      <input id="pallet-name" type="text" placeholder="Введите название палета"
+             autocomplete="off" enterkeyhint="send">
+      <div class="modal-actions">
+        <button id="btn-cancel" class="btn-cancel">Отмена</button>
+        <button id="btn-send" class="btn-send">Отправить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- УВЕДОМЛЕНИЕ -->
+  <div id="toast" class="toast"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
