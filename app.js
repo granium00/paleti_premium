@@ -225,10 +225,20 @@ function loadEmailJS() {
     if (typeof emailjs !== 'undefined') { resolve(); return; }
     const s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js';
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error('Не удалось загрузить библиотеку EmailJS'));
+    const timer = setTimeout(() =>
+      reject(new Error('Библиотека EmailJS не загрузилась за 15 сек (сеть режет cdn.jsdelivr.net?)')), 15000);
+    s.onload = () => { clearTimeout(timer); resolve(); };
+    s.onerror = () => { clearTimeout(timer); reject(new Error('Не удалось загрузить библиотеку EmailJS')); };
     document.head.appendChild(s);
   });
+}
+
+/* Ограничитель: любой запрос не может висеть вечно */
+function withTimeout(promise, ms, msg) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(msg)), ms)),
+  ]);
 }
 
 function blobToBase64(blob) {
@@ -248,14 +258,18 @@ async function sendByEmail(blob, fileName, caption) {
   await loadEmailJS();
   if (EMAILJS_PUBLIC_KEY) emailjs.init(EMAILJS_PUBLIC_KEY);
   const content = await blobToBase64(blob);
-  const resp = await emailjs.send(
-    EMAILJS_SERVICE_ID,
-    EMAILJS_TEMPLATE_ID,
-    {
-      caption: caption,
-      message: `Палет «${caption}», кодов: ${rows.length}`,
-      attachments: [{ name: fileName, content: content, encoding: 'base64' }],
-    }
+  const resp = await withTimeout(
+    emailjs.send(
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_ID,
+      {
+        caption: caption,
+        message: `Палет «${caption}», кодов: ${rows.length}`,
+        attachments: [{ name: fileName, content: content, encoding: 'base64' }],
+      }
+    ),
+    30000,
+    'Почта не ответила за 30 секунд — сеть режет api.emailjs.com?'
   );
   if (resp.status !== 200) throw new Error('EmailJS: HTTP ' + resp.status);
 }
@@ -273,6 +287,24 @@ async function runDiagnostics() {
                ') сбита — из-за этого ломается защищённое соединение. Поставьте правильную дату/время!');
   }
 
+  // Пробуем почтовый API (EmailJS)
+  if (EMAILJS_PUBLIC_KEY) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      await fetch('https://api.emailjs.com', { mode: 'no-cors', cache: 'no-store', signal: controller.signal });
+      clearTimeout(timer);
+      parts.push('📧 api.emailjs.com: доступен');
+    } catch (err) {
+      parts.push('🚫 api.emailjs.com: НЕДОСТУПЕН с устройства — ' + err.message);
+    }
+  }
+
+  // Пробуем Telegram API
+  if (!TELEGRAM_BOT_TOKEN) {
+    parts.push('✈️ Telegram: не настроен (токен пуст)');
+    return parts;
+  }
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
@@ -358,7 +390,11 @@ async function sendPallet() {
     const tasks = [];
     if (wantEmail) tasks.push(sendByEmail(blob, fileName, baseName));
     if (wantTg) tasks.push(sendToTelegram(blob, fileName, baseName));
-    const results = await Promise.allSettled(tasks);
+    const results = await withTimeout(
+      Promise.allSettled(tasks),
+      60000,
+      'Отправка заняла больше минуты — что-то зависло, прерываю'
+    );
 
     const reason = (r) =>
       (r.reason && (r.reason.message || r.reason.text)) || String(r.reason || '');
