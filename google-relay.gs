@@ -1,20 +1,23 @@
 /* ============================================================
-   РЕЛЕ ДЛЯ ОТПРАВКИ ПАЛЕТОВ НА ПОЧТУ ЧЕРЕЗ GOOGLE
-   (Google Apps Script)
+   РЕЛЕ ДЛЯ ОТПРАВКИ ПАЛЕТОВ НА ПОЧТУ
+   (Google Apps Script — сервера Google не видят блокировок)
 
    Как установить — README.md, раздел 8.
    Коротко:
    1. Открой https://script.google.com → «Новый проект»
    2. Вставь этот код целиком
-   3. Впиши свою почту в RECIPIENT и любое слово в TOKEN
+   3. Заполни RECIPIENT (своя почта) и TOKEN (слово-пароль)
    4. Deploy → New deployment → Type: Web app
       → Execute as: Me → Who has access: Anyone
-   5. Скопируй URL вида https://script.google.com/macros/s/…/exec
-      → вставь в config.js в RELAY_URL, слово — в RELAY_TOKEN
+   5. URL вида …/exec вставь в config.js в RELAY_URL
    ============================================================ */
 
-const RECIPIENT = 'ВАША_ПОЧТА@gmail.com'; // куда слать файлы
-const TOKEN = 'секретное-слово';          // любое слово, должно совпадать с RELAY_TOKEN в config.js
+const RECIPIENT = 'ВАША_ПОЧТА@gmail.com'; // куда слать письма
+
+/* слово-пароль — должно совпадать с RELAY_TOKEN в config.js */
+const TOKEN = 'granium00';
+
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 function doPost(e) {
   try {
@@ -24,11 +27,7 @@ function doPost(e) {
     }
 
     const bytes = Utilities.base64Decode(body.data);
-    const blob = Utilities.newBlob(
-      bytes,
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      body.fileName
-    );
+    const blob = Utilities.newBlob(bytes, XLSX_MIME, body.fileName);
 
     MailApp.sendEmail({
       to: RECIPIENT,

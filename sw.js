@@ -8,7 +8,7 @@
  *  иначе ТСД может показывать старую версию.
  * ===================================================== */
 
-const CACHE_NAME = 'palety-v7';
+const CACHE_NAME = 'palety-v8';
 
 const LOCAL_ASSETS = [
   './',
