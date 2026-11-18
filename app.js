@@ -7,7 +7,7 @@
 
 /* Версия приложения — показывается на экране ошибки,
    чтобы всегда было видно, свежая ли версия на устройстве */
-const APP_VERSION = '5.4';
+const APP_VERSION = '5.5';
 
 /* ---------- Состояние ---------- */
 let rows = [];            // [{ code: string }]
@@ -53,9 +53,9 @@ function clearDraft() {
   try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
 }
 
-/* ---------- Уведомление (само исчезает через ~2 сек) ---------- */
+/* ---------- Уведомление (само исчезает, длительность настраивается) ---------- */
 let toastTimer = null;
-function showToast(msg, isError = false) {
+function showToast(msg, isError = false, ms = 1700) {
   toast.textContent = msg;
   toast.classList.toggle('toast-error', isError);
   toast.classList.remove('hide');
@@ -64,7 +64,7 @@ function showToast(msg, isError = false) {
   toastTimer = setTimeout(() => {
     toast.classList.add('hide');
     setTimeout(() => toast.classList.remove('show', 'hide'), 300);
-  }, 1700);
+  }, ms);
 }
 
 /* ---------- Неприятный звук ошибки (генерируем, файл не нужен) ---------- */
@@ -84,6 +84,29 @@ function playErrorSound() {
     osc.connect(gain).connect(audioCtx.destination);
     osc.start(t);
     osc.stop(t + 0.3);
+  } catch (e) { /* звук не критичен */ }
+}
+
+/* Протяжный противный звук — отсканировано что-то не то (длина кода не совпала).
+   Три расстроенных пилы, воют вниз полторы секунды — не пропустишь */
+function playWrongSizeSound() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t = audioCtx.currentTime;
+    const dur = 1.5;
+    [220, 233, 165].forEach((freq) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, t);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(freq * 0.4, 60), t + dur);
+      gain.gain.setValueAtTime(0.25, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + dur);
+    });
   } catch (e) { /* звук не критичен */ }
 }
 
@@ -131,6 +154,13 @@ function selectRow(i) {
 function addCode(raw) {
   const code = raw.trim();
   if (!code) return;
+  /* Первая строка задаёт эталон длины: все остальные коды
+     должны быть той же длины, иначе отсканировано не то */
+  if (rows.length && code.length !== rows[0].code.length) {
+    showToast('Отсканировано что-то не то! Длина кода не совпадает с остальными. Повторите сканирование.', true, 4000);
+    playWrongSizeSound();
+    return;
+  }
   if (rows.some(r => r.code === code)) {
     showToast('Такой код уже есть в списке', true);
     playErrorSound();
