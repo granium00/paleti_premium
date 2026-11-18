@@ -31,6 +31,9 @@ const modalCount = $('modal-count');
 const nameInput = $('pallet-name');
 const btnSend = $('btn-send');
 const toast = $('toast');
+const errorModal = $('error-modal');
+const errorMsg = $('error-msg');
+const btnErrorClose = $('btn-error-close');
 
 /* ---------- Переключение экранов ---------- */
 function showScreen(name) {
@@ -110,6 +113,26 @@ function playWrongSizeSound() {
   } catch (e) { /* звук не критичен */ }
 }
 
+/* ---------- Окно ошибки сканирования ----------
+   Закрывается только кнопкой — само не исчезает.
+   Фон мигает красным (CSS), звук воет, пока окно открыто */
+let errorSoundTimer = null;
+function openScanError(msg) {
+  errorMsg.textContent = msg;
+  errorModal.classList.remove('hidden');
+  playWrongSizeSound();
+  clearInterval(errorSoundTimer);
+  errorSoundTimer = setInterval(playWrongSizeSound, 2500);
+  setTimeout(() => btnErrorClose.focus(), 50);
+}
+
+function closeScanError() {
+  errorModal.classList.add('hidden');
+  clearInterval(errorSoundTimer);
+  codeInput.value = '';
+  codeInput.focus();
+}
+
 /* ---------- Склонение слов ---------- */
 function plural(n, one, few, many) {
   const m10 = n % 10, m100 = n % 100;
@@ -152,13 +175,13 @@ function selectRow(i) {
 
 /* ---------- Добавление кода ---------- */
 function addCode(raw) {
+  if (!errorModal.classList.contains('hidden')) return; // пока открыта ошибка — не добавляем
   const code = raw.trim();
   if (!code) return;
   /* Первая строка задаёт эталон длины: все остальные коды
      должны быть той же длины, иначе отсканировано не то */
   if (rows.length && code.length !== rows[0].code.length) {
-    showToast('Отсканировано что-то не то! Длина кода не совпадает с остальными. Повторите сканирование.', true, 4000);
-    playWrongSizeSound();
+    openScanError('Отсканировано что-то не то! Длина кода не совпадает с остальными. Повторите последние сканы.');
     return;
   }
   if (rows.some(r => r.code === code)) {
@@ -533,7 +556,9 @@ $('btn-add').addEventListener('click', () => {
 // ТСД-сканеру нужно, чтобы поле всегда было в фокусе
 codeInput.addEventListener('blur', () => {
   setTimeout(() => {
-    if (!screenCollect.classList.contains('hidden') && modal.classList.contains('hidden')) {
+    if (!screenCollect.classList.contains('hidden') &&
+        modal.classList.contains('hidden') &&
+        errorModal.classList.contains('hidden')) {
       codeInput.focus();
     }
   }, 100);
@@ -541,6 +566,7 @@ codeInput.addEventListener('blur', () => {
 
 btnDelete.addEventListener('click', deleteSelected);
 btnFinish.addEventListener('click', openNameModal);
+btnErrorClose.addEventListener('click', closeScanError);
 $('btn-cancel').addEventListener('click', closeNameModal);
 btnSend.addEventListener('click', sendPallet);
 nameInput.addEventListener('keydown', (e) => {
